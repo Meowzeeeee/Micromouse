@@ -3,15 +3,13 @@
 
 #include <vector>
 #include <memory>
-#include "maze.h"  // Upewnij się, że masz dołączoną klasę Maze
+//#include <set>
+#include <map>
 
-// Definicja kierunków, w których może się poruszać robot.
-enum class Direction {
-    Up,
-    Right,
-    Down,
-    Left
-};
+#include <utility>
+#include "maze.h"  // Upewnij się, że masz dołączoną klasę Maze
+#include "direction.h"
+
 
 // Deklaracja klasy Sensor (na razie pusta)
 class Sensor;
@@ -32,6 +30,11 @@ public:
     // Metoda pozwalająca podłączyć czujnik
     void attachSensor(std::shared_ptr<Sensor> sensor);
 
+    //Metoda czyszczenia zapamietanych komorek
+    void resetVisited();
+
+
+
 private:
     int m_row;
     int m_col;
@@ -39,6 +42,11 @@ private:
 
     // Wektor wskaźników do czujników – na razie puste
     std::vector<std::shared_ptr<Sensor>> m_sensors;
+
+    //Wektor, zapisanie pozycji
+    //std::set<std::pair<int, int>> m_visited;
+    std::map<std::pair<int, int>, int> m_visitedCount;
+
 
     // Proste metody pomocnicze do zmiany kierunku
     void turnLeft();

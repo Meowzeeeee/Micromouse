@@ -1,4 +1,5 @@
 #include "maze.h"
+#include "direction.h"
 #include <cstdlib>
 #include <ctime>
 #include <algorithm>
@@ -90,4 +91,14 @@ bool Maze::hasLeftWall(int row, int col) const {
 
 const Cell& Maze::getCell(int row, int col) const {
     return m_cells[row][col];
+}
+
+bool Maze::hasWall(int row, int col, Direction direction) const {
+    switch (direction) {
+    case Direction::Up:    return hasTopWall(row, col);
+    case Direction::Right: return hasRightWall(row, col);
+    case Direction::Down:  return hasBottomWall(row, col);
+    case Direction::Left:  return hasLeftWall(row, col);
+    }
+    return true; // fallback na wypadek błędów — uznajemy, że jest ściana
 }

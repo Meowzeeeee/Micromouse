@@ -1,5 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "touch_sensor.h"
+#include "ultrasonic_sensor.h"
+
 #include <QDebug>
 #include <QMessageBox>
 
@@ -83,7 +86,19 @@ void MainWindow::createMazeAndRobot()
     m_maze  = std::make_unique<Maze>(mapSize, mapSize);
     m_robot = std::make_unique<Robot>(0, 0);
 
-    // Cel = środek
+    // RESETUJEMY PAMIĘĆ ODWIEDZONYCH PÓL
+    m_robot->resetVisited();
+
+    // Czujnik dotykowy – wykrywa ścianę bezpośrednio przed robotem
+    auto touchSensor = std::make_shared<TouchSensor>();
+    m_robot->attachSensor(touchSensor);
+
+    // Czujniki ultradźwiękowe – "widzą" na odległość w różnych kierunkach
+    m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Up));     // Przód
+    m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Left));   // Lewo
+    m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Right));  // Prawo
+
+    // Koordynaty celu (środek labiryntu)
     m_targetRow = mapSize / 2;
     m_targetCol = mapSize / 2;
 
@@ -92,6 +107,7 @@ void MainWindow::createMazeAndRobot()
     drawMaze();
     drawRobot();
 }
+
 
 // --------------------------------------------------------------------------
 // RESET UI

@@ -2,6 +2,8 @@
 #define MAZE_H
 
 #include <vector>
+#include "direction.h"
+
 
 struct Cell {
     int row;
@@ -28,6 +30,9 @@ public:
 
     // Opcjonalnie można dodać metodę, która zwróci konkretną komórkę:
     const Cell& getCell(int row, int col) const;
+
+    //Czy jest sciana
+    bool hasWall(int row, int col, Direction direction) const;
 
 private:
     int m_width;
