@@ -7,27 +7,29 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1920</width>
-    <height>1080</height>
+    <width>1280</width>
+    <height>720</height>
    </rect>
   </property>
+
+  <!-- Minimalny rozmiar całego okna: 640×480 -->
+  <property name="minimumSize">
+   <size>
+    <width>640</width>
+    <height>480</height>
+   </size>
+  </property>
+
   <property name="windowTitle">
    <string>Micromouse</string>
   </property>
 
   <widget class="QWidget" name="centralwidget">
-   <!-- GŁÓWNY UKŁAD POZIOMY: leftframe (z QGraphicsView) i rightframe (z kontrolkami) -->
    <layout class="QHBoxLayout" name="horizontalLayout_2">
+   
+    <!-- LEWA RAMKA - z layoutem, w którym umieszczamy QGraphicsView -->
     <item>
-     <!-- LEWA RAMKA -->
      <widget class="QFrame" name="leftframe">
-      <!-- Minimalne rozmiary, by widok był dość duży -->
-      <property name="minimumSize">
-       <size>
-        <width>1068</width>
-        <height>1068</height>
-       </size>
-      </property>
       <property name="frameShape">
        <enum>QFrame::StyledPanel</enum>
       </property>
@@ -35,29 +37,19 @@
        <enum>QFrame::Raised</enum>
       </property>
 
-      <!-- QGraphicsView do rysowania labiryntu -->
-      <widget class="QGraphicsView" name="graphicsView">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>1068</width>
-         <height>1068</height>
-        </rect>
-       </property>
-      </widget>
+      <layout class="QVBoxLayout" name="verticalLayoutLeft">
+       <item>
+        <widget class="QGraphicsView" name="graphicsView">
+         <!-- Usuwamy geometry, layout sam ustawi rozmiar QGraphicsView -->
+        </widget>
+       </item>
+      </layout>
      </widget>
     </item>
 
+    <!-- PRAWA RAMKA (panel sterowania) -->
     <item>
-     <!-- PRAWA RAMKA (panel sterowania i wyniki) -->
      <widget class="QFrame" name="rightframe">
-      <property name="minimumSize">
-       <size>
-        <width>836</width>
-        <height>1068</height>
-       </size>
-      </property>
       <property name="frameShape">
        <enum>QFrame::StyledPanel</enum>
       </property>
@@ -65,7 +57,7 @@
        <enum>QFrame::Raised</enum>
       </property>
 
-      <!-- LAYOUT PIONOWY WEWNĄTRZ RAMKI -->
+      <!-- Layout pionowy (verticalLayoutRight) -->
       <layout class="QVBoxLayout" name="verticalLayoutRight">
 
        <!-- Tytuł "Micromouse" -->
@@ -86,7 +78,7 @@
         </widget>
        </item>
 
-       <!-- Etykieta "Map size" -->
+       <!-- Etykieta "Map Size" -->
        <item>
         <widget class="QLabel" name="mapSizeLabel">
          <property name="font">
@@ -104,7 +96,7 @@
         </widget>
        </item>
 
-       <!-- Etykieta, która pokazuje np. "10x10" w zależności od suwaka -->
+       <!-- Wartość slidera mapy (np. "10x10") -->
        <item>
         <widget class="QLabel" name="mapSizeValueLabel">
          <property name="font">
@@ -122,7 +114,7 @@
         </widget>
        </item>
 
-       <!-- Suwak do wyboru wielkości mapy (8..20) -->
+       <!-- Slider mapy (8..20) -->
        <item>
         <widget class="QSlider" name="mapSlider">
          <property name="minimum">
@@ -146,7 +138,7 @@
         </widget>
        </item>
 
-       <!-- PRZYCISKI: Start, Stop, Restart (w poziomym layoucie) -->
+       <!-- Przycisk Start / Stop / Restart w poziomym layoucie -->
        <item>
         <layout class="QHBoxLayout" name="horizontalLayoutButtons">
          <item>
@@ -191,7 +183,7 @@
         </widget>
        </item>
 
-       <!-- QDial (np. 1..5) -->
+       <!-- QDial (1..5) -->
        <item>
         <widget class="QDial" name="speedDial">
          <property name="minimum">
@@ -209,7 +201,7 @@
         </widget>
        </item>
 
-       <!-- Etykieta pokazująca aktualną prędkość, np. "1x" -->
+       <!-- Etykieta pokazująca bieżącą prędkość (np. "1x") -->
        <item>
         <widget class="QLabel" name="speedValueLabel">
          <property name="font">
@@ -227,7 +219,7 @@
         </widget>
        </item>
 
-       <!-- Pasek postępu (0..100) -> postęp symulacji -->
+       <!-- Pasek postępu -->
        <item>
         <widget class="QProgressBar" name="progressBar">
          <property name="minimum">
@@ -245,9 +237,12 @@
         </widget>
        </item>
 
-       <!-- Etykieta "Results" (duży font) -->
+       <!-- Etykieta "Results" (duży font), DOMYŚLNIE NIEWIDOCZNA -->
        <item>
         <widget class="QLabel" name="resultsTitleLabel">
+         <property name="visible">
+          <bool>false</bool>
+         </property>
          <property name="font">
           <font>
            <pointsize>72</pointsize>
@@ -263,9 +258,12 @@
         </widget>
        </item>
 
-       <!-- Etykieta czasu (ukryta na start, np. w kodzie) -->
+       <!-- Etykieta czasu - też domyślnie niewidoczna -->
        <item>
         <widget class="QLabel" name="timeLabel">
+         <property name="visible">
+          <bool>false</bool>
+         </property>
          <property name="font">
           <font>
            <pointsize>16</pointsize>
@@ -281,9 +279,12 @@
         </widget>
        </item>
 
-       <!-- Etykieta liczby ruchów (ukryta na start, np. w kodzie) -->
+       <!-- Etykieta liczby ruchów - też niewidoczna -->
        <item>
         <widget class="QLabel" name="movesLabel">
+         <property name="visible">
+          <bool>false</bool>
+         </property>
          <property name="font">
           <font>
            <pointsize>16</pointsize>
@@ -299,12 +300,12 @@
         </widget>
        </item>
 
-      </layout>
+      </layout> <!-- KONIEC verticalLayoutRight -->
      </widget>
     </item>
-   </layout>
-  </widget>
 
+   </layout> <!-- KONIEC horizontalLayout_2 -->
+  </widget> <!-- KONIEC centralwidget -->
  </widget> <!-- KONIEC QMainWindow -->
  <resources/>
  <connections/>
