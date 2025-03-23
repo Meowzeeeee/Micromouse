@@ -1,0 +1,18 @@
+# Qt and C++ build files
+*.obj
+*.o
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# Build directories
+build/
+Debug/
+Release/
+
+# Qt Creator specific files
+*.pro.user*
+*.qmake.stash
