@@ -13,12 +13,22 @@ MainWindow::MainWindow(QWidget *parent)
     m_scene = new QGraphicsScene(this);
     ui->graphicsView->setScene(m_scene);
 
-    // Ukrywamy etykiety wyników
+    // Wyniki (Results, Time, Moves) niewidoczne na start
     ui->resultsTitleLabel->setVisible(false);
     ui->timeLabel->setVisible(false);
     ui->movesLabel->setVisible(false);
 
-    // Ustawianie tekstów początkowych
+    // 1. Inicjalizujemy QMovie z zasobów (np. ":/spinner.gif")
+    //   (Upewnij się, że w spinner.qrc jest <file>spinner.gif</file> z prefix="/")
+    m_spinnerMovie = new QMovie(":/spinner.gif", QByteArray(), this);
+    // Ewentualnie skaluj
+    m_spinnerMovie->setScaledSize(QSize(100, 66));
+    ui->loadingLabel->setMovie(m_spinnerMovie);
+    m_spinnerMovie->start();
+    // Początkowo etykieta spinnera jest niewidoczna
+    ui->loadingLabel->setVisible(false);
+
+    // Teksty początkowe
     ui->mapSizeValueLabel->setText(QString("%1x%1").arg(ui->mapSlider->value()));
     ui->speedValueLabel->setText(QString("%1x").arg(ui->speedDial->value()));
 
@@ -30,7 +40,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->stopButton,    &QPushButton::clicked, this, &MainWindow::onStopClicked);
     connect(ui->restartButton, &QPushButton::clicked, this, &MainWindow::onRestartClicked);
 
-    // Timer co X ms -> updateSimulation()
     connect(&m_timer, &QTimer::timeout, this, &MainWindow::updateSimulation);
 
     // Domyślna inicjalizacja
@@ -71,22 +80,15 @@ void MainWindow::createMazeAndRobot()
 {
     int mapSize = ui->mapSlider->value();
 
-    // Tworzymy labirynt
     m_maze  = std::make_unique<Maze>(mapSize, mapSize);
-
-    // Robot startuje w (0,0)
     m_robot = std::make_unique<Robot>(0, 0);
 
-    // Ustawiamy cel jako środek labiryntu
-    // (dla parzystego mapSize można wybrać (mapSize/2 - 1, mapSize/2 - 1))
+    // Cel = środek
     m_targetRow = mapSize / 2;
     m_targetCol = mapSize / 2;
 
-    // Reset liczników
     m_moveCount = 0;
-    ui->progressBar->setValue(0);
 
-    // Rysujemy od razu labirynt i robota
     drawMaze();
     drawRobot();
 }
@@ -96,15 +98,12 @@ void MainWindow::createMazeAndRobot()
 // --------------------------------------------------------------------------
 void MainWindow::resetUI()
 {
-    // Ukrywamy etykiety wyników
     ui->resultsTitleLabel->setVisible(false);
     ui->timeLabel->setVisible(false);
     ui->movesLabel->setVisible(false);
 
     ui->timeLabel->setText("Time: 0 s");
     ui->movesLabel->setText("Moves: 0");
-
-    ui->progressBar->setValue(0);
     m_moveCount = 0;
 }
 
@@ -118,6 +117,9 @@ void MainWindow::onStartClicked()
 
         createMazeAndRobot();
         resetUI();
+
+        // Pokazujemy spinner
+        ui->loadingLabel->setVisible(true);
 
         m_elapsed.restart();
 
@@ -139,6 +141,9 @@ void MainWindow::onStopClicked()
         m_timer.stop();
 
         ui->startButton->setEnabled(true);
+
+        // Chowamy spinner
+        ui->loadingLabel->setVisible(false);
 
         // Wyniki
         qint64 elapsedMs = m_elapsed.elapsed();
@@ -170,26 +175,23 @@ void MainWindow::onRestartClicked()
 }
 
 // --------------------------------------------------------------------------
-// UPDATE SIMULATION (pętla timera)
+// UPDATE SIMULATION
 // --------------------------------------------------------------------------
 void MainWindow::updateSimulation()
 {
-    // 1. Robot robi ruch
     m_robot->move(*m_maze);
     m_moveCount++;
 
-    // 2. Rysujemy labirynt i robota
     drawMaze();
     drawRobot();
 
-    // 3. Postęp — np. liczymy procent względem m_maxMoves
-    int progress = (100 * m_moveCount) / m_maxMoves;
-    ui->progressBar->setValue(progress);
-
-    // 4a. Robot dotarł do celu (środek)
+    // Sprawdzenie, czy robot dotarł do celu
     if (m_robot->getRow() == m_targetRow && m_robot->getCol() == m_targetCol) {
         m_timer.stop();
         m_isRunning = false;
+
+        // Chowamy spinner
+        ui->loadingLabel->setVisible(false);
 
         ui->startButton->setEnabled(true);
 
@@ -201,29 +203,28 @@ void MainWindow::updateSimulation()
         ui->resultsTitleLabel->setVisible(true);
         ui->timeLabel->setVisible(true);
         ui->movesLabel->setVisible(true);
-
         return;
     }
 
-    // 4b. Robot nie doszedł do środka, ale przekroczono m_maxMoves
+    // Limit m_maxMoves
     if (m_moveCount >= m_maxMoves) {
         m_timer.stop();
         m_isRunning = false;
+
+        ui->loadingLabel->setVisible(false);
 
         ui->startButton->setEnabled(true);
 
         qint64 elapsedMs = m_elapsed.elapsed();
         double elapsedSec = elapsedMs / 1000.0;
+
         ui->timeLabel->setText(
-            QString("Time: %1 s (not reached center)")
-                .arg(elapsedSec, 0, 'f', 2));
+            QString("Time: %1 s (not reached center)").arg(elapsedSec, 0, 'f', 2));
         ui->movesLabel->setText(QString("Moves: %1").arg(m_moveCount));
 
         ui->resultsTitleLabel->setVisible(true);
         ui->timeLabel->setVisible(true);
         ui->movesLabel->setVisible(true);
-
-        // QMessageBox::information(this, "Micromouse", "Robot didn't reach center in time.");
         return;
     }
 }
@@ -239,8 +240,7 @@ void MainWindow::drawMaze()
 
     int cellSize = 40;
     QPen pen(Qt::black, 2);
-    // Możemy dodać brush do celu
-    QBrush targetBrush(Qt::green);  // zielony dla pola docelowego
+    QBrush targetBrush(Qt::green);
 
     int width = m_maze->getWidth();
     int height = m_maze->getHeight();
@@ -250,13 +250,12 @@ void MainWindow::drawMaze()
             int x = c * cellSize;
             int y = r * cellSize;
 
-            // Jeśli to komórka docelowa, malujemy zielone tło
+            // Pole docelowe na zielono
             if (r == m_targetRow && c == m_targetCol) {
-                m_scene->addRect(x, y, cellSize, cellSize,
-                                 Qt::NoPen, targetBrush);
+                m_scene->addRect(x, y, cellSize, cellSize, Qt::NoPen, targetBrush);
             }
 
-            // Rysowanie ścian
+            // Ściany
             if (m_maze->hasTopWall(r, c)) {
                 m_scene->addLine(x, y, x + cellSize, y, pen);
             }

@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QGraphicsScene>
+#include <QMovie>  // do GIF-a
 #include <memory>
 
 #include "maze.h"
@@ -49,8 +50,11 @@ private:
     int m_targetRow = 0;
     int m_targetCol = 0;
 
-    // Maksymalna liczba ruchów, by uniknąć nieskończonej pętli
+    // Limit ruchów (by uniknąć nieskończonej pętli)
     int m_maxMoves = 2000;
+
+    // QMovie do animowanego GIF-a (spinner)
+    QMovie *m_spinnerMovie = nullptr;
 
     void createMazeAndRobot();
     void resetUI();

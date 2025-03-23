@@ -11,8 +11,8 @@
     <height>720</height>
    </rect>
   </property>
-
-  <!-- Minimalny rozmiar całego okna: 640×480 -->
+  
+  <!-- Minimalny rozmiar 640×480 -->
   <property name="minimumSize">
    <size>
     <width>640</width>
@@ -26,8 +26,7 @@
 
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_2">
-   
-    <!-- LEWA RAMKA - z layoutem, w którym umieszczamy QGraphicsView -->
+    <!-- LEWA RAMKA (QGraphicsView) -->
     <item>
      <widget class="QFrame" name="leftframe">
       <property name="frameShape">
@@ -36,12 +35,9 @@
       <property name="frameShadow">
        <enum>QFrame::Raised</enum>
       </property>
-
       <layout class="QVBoxLayout" name="verticalLayoutLeft">
        <item>
-        <widget class="QGraphicsView" name="graphicsView">
-         <!-- Usuwamy geometry, layout sam ustawi rozmiar QGraphicsView -->
-        </widget>
+        <widget class="QGraphicsView" name="graphicsView"/>
        </item>
       </layout>
      </widget>
@@ -56,10 +52,7 @@
       <property name="frameShadow">
        <enum>QFrame::Raised</enum>
       </property>
-
-      <!-- Layout pionowy (verticalLayoutRight) -->
       <layout class="QVBoxLayout" name="verticalLayoutRight">
-
        <!-- Tytuł "Micromouse" -->
        <item>
         <widget class="QLabel" name="titleLabel">
@@ -96,7 +89,7 @@
         </widget>
        </item>
 
-       <!-- Wartość slidera mapy (np. "10x10") -->
+       <!-- Etykieta z wartością suwaka (np. "10x10") -->
        <item>
         <widget class="QLabel" name="mapSizeValueLabel">
          <property name="font">
@@ -114,7 +107,7 @@
         </widget>
        </item>
 
-       <!-- Slider mapy (8..20) -->
+       <!-- Slider mapSlider (8..20) -->
        <item>
         <widget class="QSlider" name="mapSlider">
          <property name="minimum">
@@ -138,7 +131,7 @@
         </widget>
        </item>
 
-       <!-- Przycisk Start / Stop / Restart w poziomym layoucie -->
+       <!-- Przyciski Start / Stop / Restart -->
        <item>
         <layout class="QHBoxLayout" name="horizontalLayoutButtons">
          <item>
@@ -201,7 +194,7 @@
         </widget>
        </item>
 
-       <!-- Etykieta pokazująca bieżącą prędkość (np. "1x") -->
+       <!-- Etykieta pokazująca prędkość (np. "1x") -->
        <item>
         <widget class="QLabel" name="speedValueLabel">
          <property name="font">
@@ -219,35 +212,32 @@
         </widget>
        </item>
 
-       <!-- Pasek postępu -->
+       <!-- Etykieta z animowanym GIF-em (spinner), domyślnie niewidoczna -->
        <item>
-        <widget class="QProgressBar" name="progressBar">
-         <property name="minimum">
-          <number>0</number>
+        <widget class="QLabel" name="loadingLabel">
+         <property name="visible">
+          <bool>false</bool>
          </property>
-         <property name="maximum">
-          <number>100</number>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
-         <property name="value">
-          <number>0</number>
-         </property>
-         <property name="textVisible">
-          <bool>true</bool>
+         <property name="text">
+          <string/>
          </property>
         </widget>
        </item>
 
-       <!-- Etykieta "Results" (duży font), DOMYŚLNIE NIEWIDOCZNA -->
+       <!-- Etykieta "Results" (duży font), niewidoczna na start -->
        <item>
         <widget class="QLabel" name="resultsTitleLabel">
-         <property name="visible">
-          <bool>false</bool>
-         </property>
          <property name="font">
           <font>
            <pointsize>72</pointsize>
            <bold>true</bold>
           </font>
+         </property>
+         <property name="visible">
+          <bool>false</bool>
          </property>
          <property name="text">
           <string>Results</string>
@@ -258,7 +248,7 @@
         </widget>
        </item>
 
-       <!-- Etykieta czasu - też domyślnie niewidoczna -->
+       <!-- Etykieta czasu - niewidoczna na start -->
        <item>
         <widget class="QLabel" name="timeLabel">
          <property name="visible">
@@ -279,7 +269,7 @@
         </widget>
        </item>
 
-       <!-- Etykieta liczby ruchów - też niewidoczna -->
+       <!-- Etykieta liczby ruchów - niewidoczna na start -->
        <item>
         <widget class="QLabel" name="movesLabel">
          <property name="visible">
@@ -300,13 +290,12 @@
         </widget>
        </item>
 
-      </layout> <!-- KONIEC verticalLayoutRight -->
+      </layout>
      </widget>
     </item>
-
-   </layout> <!-- KONIEC horizontalLayout_2 -->
-  </widget> <!-- KONIEC centralwidget -->
- </widget> <!-- KONIEC QMainWindow -->
+   </layout>
+  </widget>
+ </widget>
  <resources/>
  <connections/>
 </ui>
