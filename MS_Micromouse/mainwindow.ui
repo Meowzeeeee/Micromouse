@@ -2,30 +2,310 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <!-- Domyślny rozmiar okna -->
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1920</width>
+    <height>1080</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Micromouse</string>
   </property>
-  <widget class="QWidget" name="centralwidget"/>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>800</width>
-     <height>21</height>
-    </rect>
-   </property>
+
+  <widget class="QWidget" name="centralwidget">
+   <!-- GŁÓWNY UKŁAD POZIOMY: leftframe (z QGraphicsView) i rightframe (z kontrolkami) -->
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <!-- LEWA RAMKA -->
+     <widget class="QFrame" name="leftframe">
+      <!-- Minimalne rozmiary, by widok był dość duży -->
+      <property name="minimumSize">
+       <size>
+        <width>1068</width>
+        <height>1068</height>
+       </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+
+      <!-- QGraphicsView do rysowania labiryntu -->
+      <widget class="QGraphicsView" name="graphicsView">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>1068</width>
+         <height>1068</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+    </item>
+
+    <item>
+     <!-- PRAWA RAMKA (panel sterowania i wyniki) -->
+     <widget class="QFrame" name="rightframe">
+      <property name="minimumSize">
+       <size>
+        <width>836</width>
+        <height>1068</height>
+       </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+
+      <!-- LAYOUT PIONOWY WEWNĄTRZ RAMKI -->
+      <layout class="QVBoxLayout" name="verticalLayoutRight">
+
+       <!-- Tytuł "Micromouse" -->
+       <item>
+        <widget class="QLabel" name="titleLabel">
+         <property name="font">
+          <font>
+           <pointsize>72</pointsize>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Micromouse</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+
+       <!-- Etykieta "Map size" -->
+       <item>
+        <widget class="QLabel" name="mapSizeLabel">
+         <property name="font">
+          <font>
+           <pointsize>20</pointsize>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Map Size</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+
+       <!-- Etykieta, która pokazuje np. "10x10" w zależności od suwaka -->
+       <item>
+        <widget class="QLabel" name="mapSizeValueLabel">
+         <property name="font">
+          <font>
+           <pointsize>16</pointsize>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>10x10</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+
+       <!-- Suwak do wyboru wielkości mapy (8..20) -->
+       <item>
+        <widget class="QSlider" name="mapSlider">
+         <property name="minimum">
+          <number>8</number>
+         </property>
+         <property name="maximum">
+          <number>20</number>
+         </property>
+         <property name="value">
+          <number>10</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="tickPosition">
+          <enum>QSlider::TicksBothSides</enum>
+         </property>
+         <property name="tickInterval">
+          <number>1</number>
+         </property>
+        </widget>
+       </item>
+
+       <!-- PRZYCISKI: Start, Stop, Restart (w poziomym layoucie) -->
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayoutButtons">
+         <item>
+          <widget class="QPushButton" name="startButton">
+           <property name="text">
+            <string>Start</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="stopButton">
+           <property name="text">
+            <string>Stop</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="restartButton">
+           <property name="text">
+            <string>Restart</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+
+       <!-- Etykieta "Speed" -->
+       <item>
+        <widget class="QLabel" name="speedTitleLabel">
+         <property name="font">
+          <font>
+           <pointsize>16</pointsize>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Speed</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+
+       <!-- QDial (np. 1..5) -->
+       <item>
+        <widget class="QDial" name="speedDial">
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>5</number>
+         </property>
+         <property name="value">
+          <number>1</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+
+       <!-- Etykieta pokazująca aktualną prędkość, np. "1x" -->
+       <item>
+        <widget class="QLabel" name="speedValueLabel">
+         <property name="font">
+          <font>
+           <pointsize>16</pointsize>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>1x</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+
+       <!-- Pasek postępu (0..100) -> postęp symulacji -->
+       <item>
+        <widget class="QProgressBar" name="progressBar">
+         <property name="minimum">
+          <number>0</number>
+         </property>
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+         <property name="textVisible">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+
+       <!-- Etykieta "Results" (duży font) -->
+       <item>
+        <widget class="QLabel" name="resultsTitleLabel">
+         <property name="font">
+          <font>
+           <pointsize>72</pointsize>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Results</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+
+       <!-- Etykieta czasu (ukryta na start, np. w kodzie) -->
+       <item>
+        <widget class="QLabel" name="timeLabel">
+         <property name="font">
+          <font>
+           <pointsize>16</pointsize>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Time: 0 s</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+
+       <!-- Etykieta liczby ruchów (ukryta na start, np. w kodzie) -->
+       <item>
+        <widget class="QLabel" name="movesLabel">
+         <property name="font">
+          <font>
+           <pointsize>16</pointsize>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Moves: 0</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+
+      </layout>
+     </widget>
+    </item>
+   </layout>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
- </widget>
+
+ </widget> <!-- KONIEC QMainWindow -->
  <resources/>
  <connections/>
 </ui>
