@@ -33,6 +33,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         touch_sensor.h touch_sensor.cpp
         spinner.qrc
         direction.h
+        rotating_ultrasonic_sensor.h rotating_ultrasonic_sensor.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET MS_Micromouse APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

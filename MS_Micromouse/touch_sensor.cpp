@@ -2,18 +2,38 @@
 #include "maze.h"
 #include "robot.h"
 
-bool TouchSensor::detect(const Maze &maze, const Robot &robot) {
+bool TouchSensor::detect(const Maze &maze, const Robot &robot)
+{
+    // 1. Ustalamy, która komórka jest "z przodu" (nextRow, nextCol)
     int row = robot.getRow();
     int col = robot.getCol();
-    switch(robot.getDirection()) {
+
+    int nextRow = row;
+    int nextCol = col;
+
+    switch (robot.getDirection()) {
     case Direction::Up:
-        return maze.hasTopWall(row, col);
+        nextRow = row - 1;
+        break;
     case Direction::Right:
-        return maze.hasRightWall(row, col);
+        nextCol = col + 1;
+        break;
     case Direction::Down:
-        return maze.hasBottomWall(row, col);
+        nextRow = row + 1;
+        break;
     case Direction::Left:
-        return maze.hasLeftWall(row, col);
+        nextCol = col - 1;
+        break;
     }
-    return false;
+
+    // 2. Jeśli nextRow/nextCol jest poza labiryntem -> traktujemy to jak ścianę
+    if (nextRow < 0 || nextRow >= maze.getHeight() ||
+        nextCol < 0 || nextCol >= maze.getWidth())
+    {
+        return true; // "dotykamy" ściany granicznej
+    }
+
+    // 3. Sprawdź, czy Maze ma ścianę pomiędzy (row,col) a (nextRow,nextCol)
+    //    w kierunku, w którym robot się porusza.
+    return maze.hasWall(row, col, robot.getDirection());
 }

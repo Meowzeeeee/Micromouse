@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "touch_sensor.h"
 #include "ultrasonic_sensor.h"
+#include "rotating_ultrasonic_sensor.h"
 
 #include <QDebug>
 #include <QMessageBox>
@@ -94,9 +95,12 @@ void MainWindow::createMazeAndRobot()
     m_robot->attachSensor(touchSensor);
 
     // Czujniki ultradźwiękowe – "widzą" na odległość w różnych kierunkach
-    m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Up));     // Przód
-    m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Left));   // Lewo
-    m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Right));  // Prawo
+    //m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Up));     // Przód
+   // m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Left));   // Lewo
+   // m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Right));  // Prawo
+    //Dodalam czujnik rotacyjny TEST
+    auto rotatingSonar = std::make_shared<RotatingUltrasonicSensor>(2); // zasięg = 2 pola
+    m_robot->attachSensor(rotatingSonar);
 
     // Koordynaty celu (środek labiryntu)
     m_targetRow = mapSize / 2;

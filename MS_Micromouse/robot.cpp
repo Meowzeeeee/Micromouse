@@ -2,15 +2,11 @@
 #include "maze.h"
 #include "sensor.h"
 #include "touch_sensor.h"
-#include "ultrasonic_sensor.h"
-#include <algorithm>
-#include <tuple>
-#include <climits>
+#include "rotating_ultrasonic_sensor.h"
 #include <QDebug>
 
-
-Robot::Robot(int startRow, int startCol)
-    : m_row(startRow), m_col(startCol), m_direction(Direction::Right) // domyślnie ustawiamy kierunek na prawo
+Robot::Robot(int startRow, int startCol, Direction startDir)
+    : m_row(startRow), m_col(startCol), m_direction(startDir)
 {
 }
 
@@ -24,151 +20,120 @@ void Robot::resetVisited()
     m_visitedCount.clear();
 }
 
-void Robot::move(const Maze& maze)
+void Robot::move(const Maze &maze)
 {
-    // Zwiększ licznik odwiedzin bieżącej komórki
-    m_visitedCount[{m_row, m_col}]++;
-    qDebug() << "Robot at:" << m_row << m_col << "Visits:" << m_visitedCount[{m_row, m_col}];
+    static int stepCounter = 0;
+    stepCounter++;
 
-    bool touchDetected = false;
-    bool ultrasonicDetected = false;
+    // --- Debug: wypisz pozycję, kierunek oraz ściany w bieżącej komórce ---
+    qDebug() << "Robot at (" << m_row << "," << m_col << ") facing" << int(m_direction);
+    qDebug() << "Maze walls at (" << m_row << "," << m_col << "):"
+             << "Up="    << maze.hasWall(m_row, m_col, Direction::Up)
+             << " Right=" << maze.hasWall(m_row, m_col, Direction::Right)
+             << " Down="  << maze.hasWall(m_row, m_col, Direction::Down)
+             << " Left="  << maze.hasWall(m_row, m_col, Direction::Left);
 
-    // Sprawdź dane z czujników
-    for (const auto& sensor : m_sensors) {
-        if (sensor->detect(maze, *this)) {
-            if (dynamic_cast<TouchSensor*>(sensor.get())) {
-                touchDetected = true;
-                qDebug() << "Touch sensor detected obstacle.";
-            }
-            else if (dynamic_cast<UltrasonicSensor*>(sensor.get())) {
-                ultrasonicDetected = true;
-                qDebug() << "Ultrasonic sensor detected obstacle.";
+    // --- 1. Sprawdzenie czujnika dotykowego (przód) ---
+    bool frontBlocked = false;
+    for (auto &sensor : m_sensors) {
+        if (auto *ts = dynamic_cast<TouchSensor*>(sensor.get())) {
+            if (ts->detect(maze, *this)) {
+                frontBlocked = true;
+                qDebug() << "Touch sensor blocks front.";
+                break;
             }
         }
     }
 
-    // Jeśli dotykowy czujnik wykryje przeszkodę, skręć natychmiast w prawo.
-    if (touchDetected) {
-        qDebug() << "Decision: Touch detected, turning right.";
-        turnRight();
-        return;
+    // --- 2. Sprawdzenie sonaru bocznego (co 3 kroki) ---
+    bool useSonar = (stepCounter % 3 == 0);
+    bool leftBlocked = false, rightBlocked = false;
+    for (auto &sensor : m_sensors) {
+        if (auto *rotSonar = dynamic_cast<RotatingUltrasonicSensor*>(sensor.get())) {
+            if (useSonar) {
+                rotSonar->update(maze, *this);
+                int distLeft  = rotSonar->getDistance(Direction::Left);
+                int distRight = rotSonar->getDistance(Direction::Right);
+                // Przyjmujemy: < 1 oznacza brak przejścia (0 = blokada, 1 = wolne pole)
+                leftBlocked  = (distLeft < 1);
+                rightBlocked = (distRight < 1);
+                qDebug() << "Sonar side check: L=" << distLeft << " R=" << distRight
+                         << " leftBlocked=" << leftBlocked << " rightBlocked=" << rightBlocked;
+            }
+            break; // zakładamy, że mamy jeden sensor rotacyjny
+        }
     }
 
-    // Wyznacz pomocnicze kierunki oraz współrzędne następców:
-    Direction leftDir, rightDir;
-    int leftRow, leftCol, rightRow, rightCol, forwardRow, forwardCol;
+    // --- 3. Obliczamy kierunki oraz docelowe współrzędne dla przodu, lewo i prawo ---
+    Direction leftDir, rightDir, frontDir;
+    int forwardRow, forwardCol;
+    int leftRow, leftCol;
+    int rightRow, rightCol;
+
     switch (m_direction) {
     case Direction::Up:
-        leftDir = Direction::Left;  rightDir = Direction::Right;
-        leftRow = m_row;  leftCol = m_col - 1;
-        rightRow = m_row; rightCol = m_col + 1;
+        frontDir   = Direction::Up;
+        leftDir    = Direction::Left;
+        rightDir   = Direction::Right;
         forwardRow = m_row - 1; forwardCol = m_col;
+        leftRow    = m_row;     leftCol   = m_col - 1;
+        rightRow   = m_row;     rightCol  = m_col + 1;
         break;
     case Direction::Right:
-        leftDir = Direction::Up;  rightDir = Direction::Down;
-        leftRow = m_row - 1; leftCol = m_col;
-        rightRow = m_row + 1; rightCol = m_col;
+        frontDir   = Direction::Right;
+        leftDir    = Direction::Up;
+        rightDir   = Direction::Down;
         forwardRow = m_row; forwardCol = m_col + 1;
+        leftRow    = m_row - 1; leftCol = m_col;
+        rightRow   = m_row + 1; rightCol = m_col;
         break;
     case Direction::Down:
-        leftDir = Direction::Right; rightDir = Direction::Left;
-        leftRow = m_row;  leftCol = m_col + 1;
-        rightRow = m_row; rightCol = m_col - 1;
+        frontDir   = Direction::Down;
+        leftDir    = Direction::Right;
+        rightDir   = Direction::Left;
         forwardRow = m_row + 1; forwardCol = m_col;
+        leftRow    = m_row; leftCol = m_col + 1;
+        rightRow   = m_row; rightCol = m_col - 1;
         break;
     case Direction::Left:
-        leftDir = Direction::Down; rightDir = Direction::Up;
-        leftRow = m_row + 1; leftCol = m_col;
-        rightRow = m_row - 1; rightCol = m_col;
+        frontDir   = Direction::Left;
+        leftDir    = Direction::Down;
+        rightDir   = Direction::Up;
         forwardRow = m_row; forwardCol = m_col - 1;
+        leftRow    = m_row + 1; leftCol = m_col;
+        rightRow   = m_row - 1; rightCol = m_col;
         break;
     }
 
-    // 1. Jeśli lewo jest wolne i nigdy tam nie byliśmy – wykonaj skręt w lewo.
-    if (!maze.hasWall(m_row, m_col, leftDir) && m_visitedCount[{leftRow, leftCol}] == 0) {
-        qDebug() << "Decision: Left is free and unvisited. Turning left.";
+    // --- 4. Algorytm wall-follower: lewa ręka na ścianie ---
+    // Kolejność: próba skrętu w lewo, jazda do przodu, próba skrętu w prawo, zawróć
+    if (!maze.hasWall(m_row, m_col, leftDir) && !leftBlocked) {
+        qDebug() << "Decision: Turn left";
         turnLeft();
         m_row = leftRow;
         m_col = leftCol;
         return;
     }
-
-    // 2. Jeśli przód jest wolny i nie wykrywa przeszkody ultradźwiękowej – jedź prosto.
-    if (!maze.hasWall(m_row, m_col, m_direction) && !ultrasonicDetected && m_visitedCount[{forwardRow, forwardCol}] == 0) {
-        qDebug() << "Decision: Forward is free and unvisited. Moving forward.";
+    if (!frontBlocked && !maze.hasWall(m_row, m_col, frontDir)) {
+        qDebug() << "Decision: Move forward";
         m_row = forwardRow;
         m_col = forwardCol;
         return;
     }
-
-    // 3. Jeśli prawo jest wolne i nie odwiedzone – wykonaj skręt w prawo.
-    if (!maze.hasWall(m_row, m_col, rightDir) && m_visitedCount[{rightRow, rightCol}] == 0) {
-        qDebug() << "Decision: Right is free and unvisited. Turning right.";
+    if (!maze.hasWall(m_row, m_col, rightDir) && !rightBlocked) {
+        qDebug() << "Decision: Turn right";
         turnRight();
         m_row = rightRow;
         m_col = rightCol;
         return;
     }
-
-    // 4. Jeśli wszystkie dostępne kierunki były odwiedzone lub czujnik ultradźwiękowy sygnalizuje przeszkodę,
-    //    wybieramy opcję z najmniejszą liczbą odwiedzin, ale z karą dla ruchu "prosto", jeśli ultradźwięk jest aktywny.
-    std::vector<std::tuple<Direction, int, int, int>> options;
-    auto score = [this, ultrasonicDetected](int r, int c, bool isForward) {
-        int visits = m_visitedCount[{r, c}];
-        int penalty = (isForward && ultrasonicDetected) ? 1000 : 0;
-        return visits + penalty;
-    };
-
-    if (!maze.hasWall(m_row, m_col, leftDir))
-        options.emplace_back(leftDir, leftRow, leftCol, score(leftRow, leftCol, false));
-    if (!maze.hasWall(m_row, m_col, m_direction))
-        options.emplace_back(m_direction, forwardRow, forwardCol, score(forwardRow, forwardCol, true));
-    if (!maze.hasWall(m_row, m_col, rightDir))
-        options.emplace_back(rightDir, rightRow, rightCol, score(rightRow, rightCol, false));
-
-    if (options.empty()) {
-        // Jeśli robot jest całkowicie zablokowany, zawróć.
-        qDebug() << "No available moves, turning around.";
-        turnRight(); turnRight();
-        return;
-    }
-
-    std::sort(options.begin(), options.end(),
-              [](const auto& a, const auto& b) {
-                  return std::get<3>(a) < std::get<3>(b);
-              });
-    Direction bestDir = std::get<0>(options.front());
-    int targetRow = std::get<1>(options.front());
-    int targetCol = std::get<2>(options.front());
-    int bestWeight = std::get<3>(options.front());
-    qDebug() << "Best option: Dir:" << int(bestDir)
-             << "Target:" << targetRow << targetCol
-             << "Weight:" << bestWeight;
-
-    // Dopasuj kierunek
-    if (bestDir != m_direction) {
-        int diff = (int(bestDir) + 4 - int(m_direction)) % 4;
-        if (diff == 1) {
-            qDebug() << "Turning right to match best option.";
-            turnRight();
-        } else if (diff == 3) {
-            qDebug() << "Turning left to match best option.";
-            turnLeft();
-        } else if (diff == 2) {
-            qDebug() << "Turning around.";
-            turnRight();
-            turnRight();
-        }
-    }
-
-    qDebug() << "Moving to:" << targetRow << targetCol;
-    m_row = targetRow;
-    m_col = targetCol;
+    qDebug() << "Decision: Turn around (dead end)";
+    turnRight();
+    turnRight();
 }
 
 void Robot::turnLeft()
 {
-    // Implementacja skrętu w lewo
     switch (m_direction) {
     case Direction::Up:    m_direction = Direction::Left;  break;
     case Direction::Right: m_direction = Direction::Up;    break;
@@ -179,7 +144,6 @@ void Robot::turnLeft()
 
 void Robot::turnRight()
 {
-    // Implementacja skrętu w prawo
     switch (m_direction) {
     case Direction::Up:    m_direction = Direction::Right; break;
     case Direction::Right: m_direction = Direction::Down;  break;
@@ -188,9 +152,8 @@ void Robot::turnRight()
     }
 }
 
-bool Robot::isWallOnLeft(const Maze& maze)
+bool Robot::isWallOnLeft(const Maze &maze)
 {
-    // Ustal, która strona jest "lewa" w zależności od aktualnego kierunku robota
     Direction leftDir;
     switch (m_direction) {
     case Direction::Up:    leftDir = Direction::Left;  break;
@@ -198,8 +161,6 @@ bool Robot::isWallOnLeft(const Maze& maze)
     case Direction::Down:  leftDir = Direction::Right; break;
     case Direction::Left:  leftDir = Direction::Down;  break;
     }
-
-    // Sprawdz obecność ściany na tej stronie
     switch (leftDir) {
     case Direction::Up:    return maze.hasTopWall(m_row, m_col);
     case Direction::Right: return maze.hasRightWall(m_row, m_col);
@@ -209,7 +170,7 @@ bool Robot::isWallOnLeft(const Maze& maze)
     return false;
 }
 
-bool Robot::isWallInFront(const Maze& maze)
+bool Robot::isWallInFront(const Maze &maze)
 {
     switch (m_direction) {
     case Direction::Up:    return maze.hasTopWall(m_row, m_col);

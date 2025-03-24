@@ -1,0 +1,174 @@
+@startuml
+
+
+
+
+
+/' Objects '/
+
+class MainWindow {
+	+MainWindow(QWidget* parent)
+	+~MainWindow()
+	-m_elapsed : QElapsedTimer
+	-m_scene : QGraphicsScene*
+	-m_spinnerMovie : QMovie*
+	-m_timer : QTimer
+	-ui : Ui::MainWindow*
+	-m_isRunning : bool
+	-m_maxMoves : int
+	-m_moveCount : int
+	-m_targetCol : int
+	-m_targetRow : int
+	-m_maze : std::unique_ptr<Maze>
+	-m_robot : std::unique_ptr<Robot>
+	-createMazeAndRobot() : void
+	-drawMaze() : void
+	-drawRobot() : void
+	-onMapSliderChanged(int value) : void
+	-onRestartClicked() : void
+	-onSpeedDialChanged(int value) : void
+	-onStartClicked() : void
+	-onStopClicked() : void
+	-resetUI() : void
+	-updateSimulation() : void
+}
+
+
+class Maze {
+	+Maze(int width, int height)
+	+getCell(int row, int col) : Cell& {query}
+	+hasBottomWall(int row, int col) : bool {query}
+	+hasLeftWall(int row, int col) : bool {query}
+	+hasRightWall(int row, int col) : bool {query}
+	+hasTopWall(int row, int col) : bool {query}
+	+hasWall(int row, int col, Direction direction) : bool {query}
+	+getHeight() : int {query}
+	+getWidth() : int {query}
+	-m_height : int
+	-m_width : int
+	-m_cells : std::vector<std::vector<Cell>>
+	-carveMaze(int row, int col) : void
+	+generate() : void
+	-initCells() : void
+}
+
+
+class Robot {
+	+Robot(int startRow, int startCol, Direction startDir)
+	+getDirection() : Direction {query}
+	-m_direction : Direction
+	-isWallInFront(const Maze& maze) : bool
+	-isWallOnLeft(const Maze& maze) : bool
+	+getCol() : int {query}
+	+getRow() : int {query}
+	-m_col : int
+	-m_row : int
+	-m_visitedCount : std::map<std::pair<int, int>, int>
+	-m_sensors : std::vector<std::shared_ptr<Sensor>>
+	+attachSensor(std::shared_ptr<Sensor> sensor) : void
+	+move(const Maze& maze) : void
+	+resetVisited() : void
+	-turnLeft() : void
+	-turnRight() : void
+}
+
+
+class RotatingUltrasonicSensor {
+	+RotatingUltrasonicSensor(int range)
+	+detect(const Maze& maze, const Robot& robot) : bool
+	+getDistance(Direction relativeDir) : int {query}
+	-m_currentIndex : int
+	-m_range : int
+	-m_measurements : std::array<int, 3>
+	+update(const Maze& maze, const Robot& robot) : void
+}
+
+
+abstract class Sensor {
+	+Sensor()
+	+~Sensor()
+	+{abstract} detect(const Maze& maze, const Robot& robot) : bool
+}
+
+
+class TouchSensor {
+	+detect(const Maze& maze, const Robot& robot) : bool
+}
+
+
+class UltrasonicSensor {
+	+UltrasonicSensor(int range, Direction direction)
+	-m_direction : Direction
+	+detect(const Maze& maze, const Robot& robot) : bool
+	-m_range : int
+}
+
+
+enum Direction {
+	Down
+	Left
+	Right
+	Up
+}
+
+
+class Cell {
+	+bottomWall : bool
+	+leftWall : bool
+	+rightWall : bool
+	+topWall : bool
+	+visited : bool
+	+col : int
+	+row : int
+}
+
+
+
+
+
+/' Inheritance relationships '/
+
+Sensor <|-- RotatingUltrasonicSensor
+
+
+Sensor <|-- TouchSensor
+
+
+Sensor <|-- UltrasonicSensor
+
+
+
+
+
+/' Aggregation relationships '/
+
+MainWindow o-- MainWindow
+
+
+MainWindow o-- Maze
+
+
+MainWindow o-- Robot
+
+
+Maze *-- Cell
+
+
+Robot *-- Direction
+
+
+Robot o-- Sensor
+
+
+UltrasonicSensor *-- Direction
+
+
+
+
+
+
+/' Nested objects '/
+
+
+
+@enduml
