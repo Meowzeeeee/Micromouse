@@ -9,28 +9,22 @@
 class MainWindow {
 	+MainWindow(QWidget* parent)
 	+~MainWindow()
-	-m_elapsed : QElapsedTimer
+	-{ : Maze m_currentMaze[]
+	-{ : Maze m_currentMaze[]
+	-m_algoGroup : QButtonGroup*
 	-m_scene : QGraphicsScene*
 	-m_spinnerMovie : QMovie*
-	-m_timer : QTimer
 	-ui : Ui::MainWindow*
-	-m_isRunning : bool
-	-m_maxMoves : int
-	-m_moveCount : int
-	-m_targetCol : int
-	-m_targetRow : int
-	-m_maze : std::unique_ptr<Maze>
-	-m_robot : std::unique_ptr<Robot>
-	-createMazeAndRobot() : void
-	-drawMaze() : void
-	-drawRobot() : void
+	-m_engine : std::unique_ptr<SimulationEngine>
+	-drawMaze(const Maze& maze) : void
+	-drawRobot(int row, int col) : void
+	-onAlgorithmChanged(int id) : void
 	-onMapSliderChanged(int value) : void
 	-onRestartClicked() : void
+	-onSimulationFinished(double elapsedSec, int moves, bool reached) : void
 	-onSpeedDialChanged(int value) : void
 	-onStartClicked() : void
 	-onStopClicked() : void
-	-resetUI() : void
-	-updateSimulation() : void
 }
 
 
@@ -54,20 +48,27 @@ class Maze {
 
 
 class Robot {
-	+Robot(int startRow, int startCol, Direction startDir)
+	+Robot(int startRow, int startCol, Direction startDir, MovementAlgorithm algo, int goalRow, int goalCol)
+	+~Robot()
 	+getDirection() : Direction {query}
 	-m_direction : Direction
-	-isWallInFront(const Maze& maze) : bool
-	-isWallOnLeft(const Maze& maze) : bool
+	-m_algorithm : MovementAlgorithm
+	+getAlgorithm() : int {query}
 	+getCol() : int {query}
 	+getRow() : int {query}
 	-m_col : int
+	-m_goalCol : int
+	-m_goalRow : int
 	-m_row : int
-	-m_visitedCount : std::map<std::pair<int, int>, int>
-	-m_sensors : std::vector<std::shared_ptr<Sensor>>
-	+attachSensor(std::shared_ptr<Sensor> sensor) : void
+	-m_pathIndex : size_t
+	-m_rotSonar : std::unique_ptr<RotatingUltrasonicSensor>
+	-m_touchSensor : std::unique_ptr<TouchSensor>
+	-m_path : std::vector<std::pair<int, int>>
 	+move(const Maze& maze) : void
-	+resetVisited() : void
+	-moveAStar(const Maze& maze) : void
+	-moveFloodFill(const Maze& maze) : void
+	-moveWithSensors(const Maze& maze) : void
+	+setAlgorithm(MovementAlgorithm algo) : void
 	-turnLeft() : void
 	-turnRight() : void
 }
@@ -91,6 +92,27 @@ abstract class Sensor {
 }
 
 
+class SimulationEngine {
+	+SimulationEngine(QObject* parent)
+	-m_elapsed : QElapsedTimer
+	-m_timer : QTimer
+	-m_algo : Robot::MovementAlgorithm
+	-m_mapSize : int
+	-m_maxMoves : int
+	-m_moveCount : int
+	+mazeChanged(const Maze& maze) : signals : void
+	-m_maze : std::unique_ptr<Maze>
+	-m_robot : std::unique_ptr<Robot>
+	-onTimeout() : void
+	+robotMoved(int row, int col) : void
+	+setAlgorithm(Robot::MovementAlgorithm algo) : void
+	+setMapSize(int size) : void
+	+simulationFinished(double elapsedSec, int moves, bool reachedCenter) : void
+	+start(int speedMultiplier) : void
+	+stop() : void
+}
+
+
 class TouchSensor {
 	+detect(const Maze& maze, const Robot& robot) : bool
 }
@@ -109,6 +131,13 @@ enum Direction {
 	Left
 	Right
 	Up
+}
+
+
+enum Robot::MovementAlgorithm {
+	AStar
+	FloodFill
+	Sensors
 }
 
 
@@ -145,10 +174,10 @@ Sensor <|-- UltrasonicSensor
 MainWindow o-- MainWindow
 
 
-MainWindow o-- Maze
+MainWindow "2" *-- Maze
 
 
-MainWindow o-- Robot
+MainWindow o-- SimulationEngine
 
 
 Maze *-- Cell
@@ -157,7 +186,16 @@ Maze *-- Cell
 Robot *-- Direction
 
 
-Robot o-- Sensor
+Robot o-- RotatingUltrasonicSensor
+
+
+Robot o-- TouchSensor
+
+
+SimulationEngine o-- Maze
+
+
+SimulationEngine o-- Robot
 
 
 UltrasonicSensor *-- Direction
@@ -168,6 +206,9 @@ UltrasonicSensor *-- Direction
 
 
 /' Nested objects '/
+
+Robot +-- Robot::MovementAlgorithm
+
 
 
 
