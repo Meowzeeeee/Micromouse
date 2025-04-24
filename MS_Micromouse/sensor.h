@@ -7,7 +7,7 @@ class Robot;
 class Sensor
 {
 public:
-    // Dodajemy deklarację konstruktora
+    // Deklaracja konstruktora
     Sensor();
     virtual ~Sensor() {}
 

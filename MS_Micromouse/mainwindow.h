@@ -2,65 +2,55 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QTimer>
-#include <QElapsedTimer>
-#include <QGraphicsScene>
-#include <QMovie>  // do GIF-a
+#include <QButtonGroup>
+#include <QMovie>
 #include <memory>
 
-#include "maze.h"
-#include "robot.h"
+#include "maze.h"               // potrzebne do Maze
+#include "simulationengine.h"   // SimulationEngine
+#include "robot.h"              // Robot::MovementAlgorithm
 
 QT_BEGIN_NAMESPACE
-namespace Ui {
-class MainWindow;
-}
+namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow
-{
+class QGraphicsScene;
+
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    ~MainWindow() override;
 
 private slots:
-    void onMapSliderChanged(int value);
-    void onSpeedDialChanged(int value);
     void onStartClicked();
     void onStopClicked();
     void onRestartClicked();
-    void updateSimulation();
+    void onMapSliderChanged(int value);
+    void onSpeedDialChanged(int value);
+    void onAlgorithmChanged(int id);
+    void drawMaze(const Maze &maze);
+    void drawRobot(int row, int col);
+    void onSimulationFinished(double elapsedSec, int moves, bool reached);
 
 private:
     Ui::MainWindow *ui;
 
-    std::unique_ptr<Maze> m_maze;
-    std::unique_ptr<Robot> m_robot;
-    QGraphicsScene *m_scene;
+    // silnik symulacji
+    std::unique_ptr<SimulationEngine> m_engine;
 
-    QTimer m_timer;
-    QElapsedTimer m_elapsed;
+    // scena do rysowania
+    QGraphicsScene *m_scene = nullptr;
 
-    bool m_isRunning = false;
-    int m_moveCount = 0;
-
-    // Koordynaty celu (środek labiryntu)
-    int m_targetRow = 0;
-    int m_targetCol = 0;
-
-    // Limit ruchów (by uniknąć nieskończonej pętli)
-    int m_maxMoves = 2000;
-
-    // QMovie do animowanego GIF-a (spinner)
+    // spinner (GIF)
     QMovie *m_spinnerMovie = nullptr;
 
-    void createMazeAndRobot();
-    void resetUI();
+    // grupa przycisków algorytmu
+    QButtonGroup *m_algoGroup = nullptr;
 
-    void drawMaze();
-    void drawRobot();
+    // pamiętamy stan labiryntu, by móc przerysować przed robotem
+    Maze m_currentMaze{8, 8};
 };
 
 #endif // MAINWINDOW_H

@@ -28,10 +28,10 @@ public:
     bool hasBottomWall(int row, int col) const;
     bool hasLeftWall(int row, int col) const;
 
-    // Opcjonalnie można dodać metodę, która zwróci konkretną komórkę:
+    // Metoda, która zwraca konkretną komórkę:
     const Cell& getCell(int row, int col) const;
 
-    //Czy jest sciana
+    //Czy jest sciana?
     bool hasWall(int row, int col, Direction direction) const;
 
 private:

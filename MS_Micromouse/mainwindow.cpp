@@ -1,53 +1,61 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "touch_sensor.h"
-#include "ultrasonic_sensor.h"
-#include "rotating_ultrasonic_sensor.h"
 
-#include <QDebug>
-#include <QMessageBox>
+#include <QGraphicsScene>
+#include <QPen>
+#include <QBrush>
+#include <QButtonGroup>
+#include <QSlider>
+#include <QDial>
+#include <QPushButton>
+#include <QLabel>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , m_engine(std::make_unique<SimulationEngine>(this))
 {
     ui->setupUi(this);
 
-    // Tworzymy scenę i przypinamy do QGraphicsView
+    // 1) Scena i view
     m_scene = new QGraphicsScene(this);
     ui->graphicsView->setScene(m_scene);
 
-    // Wyniki (Results, Time, Moves) niewidoczne na start
-    ui->resultsTitleLabel->setVisible(false);
-    ui->timeLabel->setVisible(false);
-    ui->movesLabel->setVisible(false);
-
-    // 1. Inicjalizujemy QMovie z zasobów (np. ":/spinner.gif")
-    //   (Upewnij się, że w spinner.qrc jest <file>spinner.gif</file> z prefix="/")
+    // 2) Spinner
     m_spinnerMovie = new QMovie(":/spinner.gif", QByteArray(), this);
-    // Ewentualnie skaluj
-    m_spinnerMovie->setScaledSize(QSize(100, 66));
+    m_spinnerMovie->setScaledSize(QSize(100,66));
     ui->loadingLabel->setMovie(m_spinnerMovie);
     m_spinnerMovie->start();
-    // Początkowo etykieta spinnera jest niewidoczna
     ui->loadingLabel->setVisible(false);
 
-    // Teksty początkowe
-    ui->mapSizeValueLabel->setText(QString("%1x%1").arg(ui->mapSlider->value()));
-    ui->speedValueLabel->setText(QString("%1x").arg(ui->speedDial->value()));
+    // 3) RadioButtons – algorytm
+    m_algoGroup = new QButtonGroup(this);
+    m_algoGroup->addButton(ui->rbSensors,   static_cast<int>(Robot::MovementAlgorithm::Sensors));
+    m_algoGroup->addButton(ui->rbFloodFill, static_cast<int>(Robot::MovementAlgorithm::FloodFill));
+    m_algoGroup->addButton(ui->rbAStar,     static_cast<int>(Robot::MovementAlgorithm::AStar));
+    connect(m_algoGroup,
+            static_cast<void(QButtonGroup::*)(int)>(&QButtonGroup::idClicked),
+            this,
+            &MainWindow::onAlgorithmChanged);
 
-    // Podłączenie sygnałów
-    connect(ui->mapSlider, &QSlider::valueChanged, this, &MainWindow::onMapSliderChanged);
-    connect(ui->speedDial, &QDial::valueChanged,   this, &MainWindow::onSpeedDialChanged);
-
+    // 4) GUI → slots
     connect(ui->startButton,   &QPushButton::clicked, this, &MainWindow::onStartClicked);
     connect(ui->stopButton,    &QPushButton::clicked, this, &MainWindow::onStopClicked);
     connect(ui->restartButton, &QPushButton::clicked, this, &MainWindow::onRestartClicked);
+    connect(ui->mapSlider,     &QSlider::valueChanged, this, &MainWindow::onMapSliderChanged);
+    connect(ui->speedDial,     &QDial::valueChanged,   this, &MainWindow::onSpeedDialChanged);
 
-    connect(&m_timer, &QTimer::timeout, this, &MainWindow::updateSimulation);
+    // 5) Silnik → GUI
+    connect(m_engine.get(), &SimulationEngine::mazeChanged,
+            this, &MainWindow::drawMaze);
+    connect(m_engine.get(), &SimulationEngine::robotMoved,
+            this, &MainWindow::drawRobot);
+    connect(m_engine.get(), &SimulationEngine::simulationFinished,
+            this, &MainWindow::onSimulationFinished);
 
-    // Domyślna inicjalizacja
-    createMazeAndRobot();
+    // 6) Etykiety startowe
+    ui->mapSizeValueLabel->setText(QString("%1x%1").arg(ui->mapSlider->value()));
+    ui->speedValueLabel->setText(QString("%1x").arg(ui->speedDial->value()));
 }
 
 MainWindow::~MainWindow()
@@ -55,262 +63,99 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-// --------------------------------------------------------------------------
-// SUWAK MAPY
-// --------------------------------------------------------------------------
+// Zmień algorytm
+void MainWindow::onAlgorithmChanged(int id)
+{
+    m_engine->setAlgorithm(static_cast<Robot::MovementAlgorithm>(id));
+}
+
+// Rozmiar mapy
 void MainWindow::onMapSliderChanged(int value)
 {
     ui->mapSizeValueLabel->setText(QString("%1x%1").arg(value));
 }
 
-// --------------------------------------------------------------------------
-// DIAL PRĘDKOŚCI
-// --------------------------------------------------------------------------
+// Prędkośc
 void MainWindow::onSpeedDialChanged(int value)
 {
     ui->speedValueLabel->setText(QString("%1x").arg(value));
-
-    if (m_isRunning) {
-        int baseInterval = 200;
-        int newInterval = baseInterval / value;
-        m_timer.start(newInterval);
-    }
 }
 
-// --------------------------------------------------------------------------
-// CREATE MAZE & ROBOT
-// --------------------------------------------------------------------------
-void MainWindow::createMazeAndRobot()
-{
-    int mapSize = ui->mapSlider->value();
-
-    m_maze  = std::make_unique<Maze>(mapSize, mapSize);
-    m_robot = std::make_unique<Robot>(0, 0);
-
-    // RESETUJEMY PAMIĘĆ ODWIEDZONYCH PÓL
-    m_robot->resetVisited();
-
-    // Czujnik dotykowy – wykrywa ścianę bezpośrednio przed robotem
-    auto touchSensor = std::make_shared<TouchSensor>();
-    m_robot->attachSensor(touchSensor);
-
-    // Czujniki ultradźwiękowe – "widzą" na odległość w różnych kierunkach
-    //m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Up));     // Przód
-   // m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Left));   // Lewo
-   // m_robot->attachSensor(std::make_shared<UltrasonicSensor>(2, Direction::Right));  // Prawo
-    //Dodalam czujnik rotacyjny TEST
-    auto rotatingSonar = std::make_shared<RotatingUltrasonicSensor>(2); // zasięg = 2 pola
-    m_robot->attachSensor(rotatingSonar);
-
-    // Koordynaty celu (środek labiryntu)
-    m_targetRow = mapSize / 2;
-    m_targetCol = mapSize / 2;
-
-    m_moveCount = 0;
-
-    drawMaze();
-    drawRobot();
-}
-
-
-// --------------------------------------------------------------------------
-// RESET UI
-// --------------------------------------------------------------------------
-void MainWindow::resetUI()
+// Start
+void MainWindow::onStartClicked()
 {
     ui->resultsTitleLabel->setVisible(false);
     ui->timeLabel->setVisible(false);
     ui->movesLabel->setVisible(false);
+    ui->loadingLabel->setVisible(true);
 
-    ui->timeLabel->setText("Time: 0 s");
-    ui->movesLabel->setText("Moves: 0");
-    m_moveCount = 0;
+    m_engine->setMapSize(ui->mapSlider->value());
+    m_engine->start(ui->speedDial->value());
 }
 
-// --------------------------------------------------------------------------
-// START
-// --------------------------------------------------------------------------
-void MainWindow::onStartClicked()
-{
-    if (!m_isRunning) {
-        m_isRunning = true;
-
-        createMazeAndRobot();
-        resetUI();
-
-        // Pokazujemy spinner
-        ui->loadingLabel->setVisible(true);
-
-        m_elapsed.restart();
-
-        int baseInterval = 200;
-        int newInterval = baseInterval / ui->speedDial->value();
-        m_timer.start(newInterval);
-
-        ui->startButton->setEnabled(false);
-    }
-}
-
-// --------------------------------------------------------------------------
-// STOP
-// --------------------------------------------------------------------------
+// Stop
 void MainWindow::onStopClicked()
 {
-    if (m_isRunning) {
-        m_isRunning = false;
-        m_timer.stop();
-
-        ui->startButton->setEnabled(true);
-
-        // Chowamy spinner
-        ui->loadingLabel->setVisible(false);
-
-        // Wyniki
-        qint64 elapsedMs = m_elapsed.elapsed();
-        double elapsedSec = elapsedMs / 1000.0;
-        ui->timeLabel->setText(QString("Time: %1 s").arg(elapsedSec, 0, 'f', 2));
-        ui->movesLabel->setText(QString("Moves: %1").arg(m_moveCount));
-
-        ui->resultsTitleLabel->setVisible(true);
-        ui->timeLabel->setVisible(true);
-        ui->movesLabel->setVisible(true);
-    }
+    m_engine->stop();
 }
 
-// --------------------------------------------------------------------------
-// RESTART
-// --------------------------------------------------------------------------
+// Restart
 void MainWindow::onRestartClicked()
 {
-    if (m_isRunning) {
-        m_isRunning = false;
-        m_timer.stop();
-        ui->startButton->setEnabled(true);
-    }
-
-    createMazeAndRobot();
-    resetUI();
-    drawMaze();
-    drawRobot();
+    m_engine->stop();
+    ui->loadingLabel->setVisible(false);
+    drawMaze(Maze(ui->mapSlider->value(), ui->mapSlider->value()));
 }
 
-// --------------------------------------------------------------------------
-// UPDATE SIMULATION
-// --------------------------------------------------------------------------
-void MainWindow::updateSimulation()
+// Rysuj labirynt
+void MainWindow::drawMaze(const Maze &maze)
 {
-    m_robot->move(*m_maze);
-    m_moveCount++;
-
-    drawMaze();
-    drawRobot();
-
-    // Sprawdzenie, czy robot dotarł do celu
-    if (m_robot->getRow() == m_targetRow && m_robot->getCol() == m_targetCol) {
-        m_timer.stop();
-        m_isRunning = false;
-
-        // Chowamy spinner
-        ui->loadingLabel->setVisible(false);
-
-        ui->startButton->setEnabled(true);
-
-        qint64 elapsedMs = m_elapsed.elapsed();
-        double elapsedSec = elapsedMs / 1000.0;
-        ui->timeLabel->setText(QString("Time: %1 s").arg(elapsedSec, 0, 'f', 2));
-        ui->movesLabel->setText(QString("Moves: %1").arg(m_moveCount));
-
-        ui->resultsTitleLabel->setVisible(true);
-        ui->timeLabel->setVisible(true);
-        ui->movesLabel->setVisible(true);
-        return;
-    }
-
-    // Limit m_maxMoves
-    if (m_moveCount >= m_maxMoves) {
-        m_timer.stop();
-        m_isRunning = false;
-
-        ui->loadingLabel->setVisible(false);
-
-        ui->startButton->setEnabled(true);
-
-        qint64 elapsedMs = m_elapsed.elapsed();
-        double elapsedSec = elapsedMs / 1000.0;
-
-        ui->timeLabel->setText(
-            QString("Time: %1 s (not reached center)").arg(elapsedSec, 0, 'f', 2));
-        ui->movesLabel->setText(QString("Moves: %1").arg(m_moveCount));
-
-        ui->resultsTitleLabel->setVisible(true);
-        ui->timeLabel->setVisible(true);
-        ui->movesLabel->setVisible(true);
-        return;
-    }
-}
-
-// --------------------------------------------------------------------------
-// RYSOWANIE LABIRYNTU
-// --------------------------------------------------------------------------
-void MainWindow::drawMaze()
-{
-    if (!m_maze) return;
-
+    m_currentMaze = maze;
     m_scene->clear();
 
     int cellSize = 40;
     QPen pen(Qt::black, 2);
     QBrush targetBrush(Qt::green);
 
-    int width = m_maze->getWidth();
-    int height = m_maze->getHeight();
-
-    for (int r = 0; r < height; ++r) {
-        for (int c = 0; c < width; ++c) {
-            int x = c * cellSize;
-            int y = r * cellSize;
-
-            // Pole docelowe na zielono
-            if (r == m_targetRow && c == m_targetCol) {
+    int W = maze.getWidth(), H = maze.getHeight();
+    for (int r = 0; r < H; ++r) {
+        for (int c = 0; c < W; ++c) {
+            int x = c * cellSize, y = r * cellSize;
+            if (r == H/2 && c == W/2)
                 m_scene->addRect(x, y, cellSize, cellSize, Qt::NoPen, targetBrush);
-            }
-
-            // Ściany
-            if (m_maze->hasTopWall(r, c)) {
-                m_scene->addLine(x, y, x + cellSize, y, pen);
-            }
-            if (m_maze->hasRightWall(r, c)) {
-                m_scene->addLine(x + cellSize, y, x + cellSize, y + cellSize, pen);
-            }
-            if (m_maze->hasBottomWall(r, c)) {
-                m_scene->addLine(x, y + cellSize, x + cellSize, y + cellSize, pen);
-            }
-            if (m_maze->hasLeftWall(r, c)) {
-                m_scene->addLine(x, y, x, y + cellSize, pen);
-            }
+            if (maze.hasTopWall(r,c))
+                m_scene->addLine(x, y, x+cellSize, y, pen);
+            if (maze.hasRightWall(r,c))
+                m_scene->addLine(x+cellSize, y, x+cellSize, y+cellSize, pen);
+            if (maze.hasBottomWall(r,c))
+                m_scene->addLine(x, y+cellSize, x+cellSize, y+cellSize, pen);
+            if (maze.hasLeftWall(r,c))
+                m_scene->addLine(x, y, x, y+cellSize, pen);
         }
     }
 }
 
-// --------------------------------------------------------------------------
-// RYSOWANIE ROBOTA
-// --------------------------------------------------------------------------
-void MainWindow::drawRobot()
+// Rysuj robota
+void MainWindow::drawRobot(int row, int col)
 {
-    if (!m_robot) return;
+    // przerysuj najpierw cały labirynt
+    drawMaze(m_currentMaze);
 
-    int cellSize = 40;
-    int row = m_robot->getRow();
-    int col = m_robot->getCol();
-
-    int x = col * cellSize;
-    int y = row * cellSize;
-
-    int margin = 6;
+    // potem robot
+    int cellSize = 40, m = 6;
     QPen pen(Qt::red);
     QBrush brush(Qt::red);
+    int x = col*cellSize + m, y = row*cellSize + m;
+    m_scene->addEllipse(x, y, cellSize-2*m, cellSize-2*m, pen, brush);
+}
 
-    m_scene->addEllipse(x + margin, y + margin,
-                        cellSize - 2*margin, cellSize - 2*margin,
-                        pen, brush);
+// Koniec symulacji
+void MainWindow::onSimulationFinished(double elapsedSec, int moves, bool /*reached*/)
+{
+    ui->loadingLabel->setVisible(false);
+    ui->timeLabel ->setText(QString("Time: %1 s").arg(elapsedSec, 0, 'f', 2));
+    ui->movesLabel->setText(QString("Moves: %1").arg(moves));
+    ui->resultsTitleLabel->setVisible(true);
+    ui->timeLabel->setVisible(true);
+    ui->movesLabel->setVisible(true);
 }

@@ -3,49 +3,59 @@
 
 #include <vector>
 #include <memory>
-#include <map>
 #include <utility>
-#include "maze.h"  // Klasa Maze
+#include "maze.h"
 #include "direction.h"
 
-// Deklaracja klasy Sensor (ogólna)
-class Sensor;
+class TouchSensor;
+class RotatingUltrasonicSensor;
 
 class Robot
 {
 public:
-    // Konstruktor – teraz przyjmuje też startowy kierunek (domyślnie Down)
-    Robot(int startRow, int startCol, Direction startDir = Direction::Down);
+    enum class MovementAlgorithm { Sensors = 0, FloodFill = 1, AStar = 2 };
 
-    // Metoda wykonująca jeden krok ruchu robota
+    Robot(int startRow,
+          int startCol,
+          Direction startDir = Direction::Down,
+          MovementAlgorithm algo = MovementAlgorithm::Sensors,
+          int goalRow = 0,
+          int goalCol = 0);
+    ~Robot();  // destruktor w CPP, widzi pełne defini­cje sensorów
+
     void move(const Maze &maze);
 
     int getRow() const { return m_row; }
     int getCol() const { return m_col; }
     Direction getDirection() const { return m_direction; }
 
-    // Metoda dołączania czujników
-    void attachSensor(std::shared_ptr<Sensor> sensor);
-
-    // Reset pamięci odwiedzonych pól
-    void resetVisited();
+    MovementAlgorithm getAlgorithm() const { return m_algorithm; }
+    void setAlgorithm(MovementAlgorithm algo) { m_algorithm = algo; }
 
 private:
     int m_row;
     int m_col;
     Direction m_direction;
 
-    // Wektor wskaźników do czujników (TouchSensor, RotatingUltrasonicSensor, itp.)
-    std::vector<std::shared_ptr<Sensor>> m_sensors;
-    std::map<std::pair<int, int>, int> m_visitedCount;
+    // kompozycja czujników — robot je tworzy i niszczy
+    std::unique_ptr<TouchSensor>              m_touchSensor;
+    std::unique_ptr<RotatingUltrasonicSensor> m_rotSonar;
 
-    // Metody pomocnicze do zmiany kierunku
+    MovementAlgorithm m_algorithm;
+    int m_goalRow;
+    int m_goalCol;
+
+    // dla A*
+    std::vector<std::pair<int,int>> m_path;
+    size_t m_pathIndex = 0;
+
+    // trzy strategie ruchu:
+    void moveWithSensors(const Maze &maze);
+    void moveFloodFill   (const Maze &maze);
+    void moveAStar       (const Maze &maze);
+
     void turnLeft();
     void turnRight();
-
-    // Opcjonalnie:
-    bool isWallOnLeft(const Maze &maze);
-    bool isWallInFront(const Maze &maze);
 };
 
 #endif // ROBOT_H

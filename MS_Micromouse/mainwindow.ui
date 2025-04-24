@@ -2,7 +2,6 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
-  <!-- Domyślny rozmiar okna -->
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,22 +10,17 @@
     <height>720</height>
    </rect>
   </property>
-  
-  <!-- Minimalny rozmiar 640×480 -->
   <property name="minimumSize">
    <size>
     <width>640</width>
     <height>480</height>
    </size>
   </property>
-
   <property name="windowTitle">
    <string>Micromouse</string>
   </property>
-
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_2">
-    <!-- LEWA RAMKA (QGraphicsView) -->
     <item>
      <widget class="QFrame" name="leftframe">
       <property name="frameShape">
@@ -42,8 +36,6 @@
       </layout>
      </widget>
     </item>
-
-    <!-- PRAWA RAMKA (panel sterowania) -->
     <item>
      <widget class="QFrame" name="rightframe">
       <property name="frameShape">
@@ -53,7 +45,6 @@
        <enum>QFrame::Raised</enum>
       </property>
       <layout class="QVBoxLayout" name="verticalLayoutRight">
-       <!-- Tytuł "Micromouse" -->
        <item>
         <widget class="QLabel" name="titleLabel">
          <property name="font">
@@ -70,8 +61,6 @@
          </property>
         </widget>
        </item>
-
-       <!-- Etykieta "Map Size" -->
        <item>
         <widget class="QLabel" name="mapSizeLabel">
          <property name="font">
@@ -88,8 +77,6 @@
          </property>
         </widget>
        </item>
-
-       <!-- Etykieta z wartością suwaka (np. "10x10") -->
        <item>
         <widget class="QLabel" name="mapSizeValueLabel">
          <property name="font">
@@ -106,8 +93,6 @@
          </property>
         </widget>
        </item>
-
-       <!-- Slider mapSlider (8..20) -->
        <item>
         <widget class="QSlider" name="mapSlider">
          <property name="minimum">
@@ -130,8 +115,6 @@
          </property>
         </widget>
        </item>
-
-       <!-- Przyciski Start / Stop / Restart -->
        <item>
         <layout class="QHBoxLayout" name="horizontalLayoutButtons">
          <item>
@@ -157,8 +140,6 @@
          </item>
         </layout>
        </item>
-
-       <!-- Etykieta "Speed" -->
        <item>
         <widget class="QLabel" name="speedTitleLabel">
          <property name="font">
@@ -175,8 +156,6 @@
          </property>
         </widget>
        </item>
-
-       <!-- QDial (1..5) -->
        <item>
         <widget class="QDial" name="speedDial">
          <property name="minimum">
@@ -193,8 +172,6 @@
          </property>
         </widget>
        </item>
-
-       <!-- Etykieta pokazująca prędkość (np. "1x") -->
        <item>
         <widget class="QLabel" name="speedValueLabel">
          <property name="font">
@@ -211,8 +188,40 @@
          </property>
         </widget>
        </item>
-
-       <!-- Etykieta z animowanym GIF-em (spinner), domyślnie niewidoczna -->
+       <!-- GroupBox with radio buttons for algorithm selection -->
+       <item>
+        <widget class="QGroupBox" name="algoGroupBox">
+         <property name="title">
+          <string>Algorithm</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayoutAlgo">
+          <item>
+           <widget class="QRadioButton" name="rbSensors">
+            <property name="text">
+             <string>Sensors</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbFloodFill">
+            <property name="text">
+             <string>Flood-Fill</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbAStar">
+            <property name="text">
+             <string>A*</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
        <item>
         <widget class="QLabel" name="loadingLabel">
          <property name="visible">
@@ -226,8 +235,6 @@
          </property>
         </widget>
        </item>
-
-       <!-- Etykieta "Results" (duży font), niewidoczna na start -->
        <item>
         <widget class="QLabel" name="resultsTitleLabel">
          <property name="font">
@@ -247,8 +254,6 @@
          </property>
         </widget>
        </item>
-
-       <!-- Etykieta czasu - niewidoczna na start -->
        <item>
         <widget class="QLabel" name="timeLabel">
          <property name="visible">
@@ -268,8 +273,6 @@
          </property>
         </widget>
        </item>
-
-       <!-- Etykieta liczby ruchów - niewidoczna na start -->
        <item>
         <widget class="QLabel" name="movesLabel">
          <property name="visible">
@@ -289,7 +292,6 @@
          </property>
         </widget>
        </item>
-
       </layout>
      </widget>
     </item>

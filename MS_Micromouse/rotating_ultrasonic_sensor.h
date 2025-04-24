@@ -19,7 +19,7 @@ public:
     // Zwraca zmierzony dystans dla relatywnego kierunku: Left (0), Front (1), Right (2).
     int getDistance(Direction relativeDir) const;
 
-    // Dla zgodności z interfejsem Sensor – opcjonalnie możesz zostawić pustą implementację detect()
+    // Dla zgodności z interfejsem Sensor
     bool detect(const Maze &maze, const Robot &robot) override { return false; }
 
 private:

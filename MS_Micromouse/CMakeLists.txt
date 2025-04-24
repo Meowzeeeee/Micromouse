@@ -13,10 +13,10 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
+    main.cpp
+    mainwindow.cpp
+    mainwindow.h
+    mainwindow.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -25,27 +25,19 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         maze.h maze.cpp
         robot.h robot.cpp
-        robot.h robot.cpp
-        robot.h
-        robot.cpp
         sensor.h sensor.cpp
         ultrasonic_sensor.h ultrasonic_sensor.cpp
         touch_sensor.h touch_sensor.cpp
-        spinner.qrc
-        direction.h
         rotating_ultrasonic_sensor.h rotating_ultrasonic_sensor.cpp
+        direction.h
+        spinner.qrc
+        simulationengine.h simulationengine.cpp
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET MS_Micromouse APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
     if(ANDROID)
         add_library(MS_Micromouse SHARED
             ${PROJECT_SOURCES}
         )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(MS_Micromouse
             ${PROJECT_SOURCES}
@@ -55,9 +47,9 @@ endif()
 
 target_link_libraries(MS_Micromouse PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
+# <- DODANA LINIA poniżej:
+target_include_directories(MS_Micromouse PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 if(${QT_VERSION} VERSION_LESS 6.1.0)
   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.MS_Micromouse)
 endif()
