@@ -6,9 +6,9 @@
 #include <QMovie>
 #include <memory>
 
-#include "maze.h"               // potrzebne do Maze
-#include "simulationengine.h"   // SimulationEngine
-#include "robot.h"              // Robot::MovementAlgorithm
+#include "maze.h"               // definicja Maze
+#include "simulationengine.h"   // klasa SimulationEngine
+#include "robot.h"              // enum MovementAlgorithm
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -24,33 +24,23 @@ public:
     ~MainWindow() override;
 
 private slots:
-    void onStartClicked();
-    void onStopClicked();
-    void onRestartClicked();
-    void onMapSliderChanged(int value);
-    void onSpeedDialChanged(int value);
-    void onAlgorithmChanged(int id);
-    void drawMaze(const Maze &maze);
-    void drawRobot(int row, int col);
-    void onSimulationFinished(double elapsedSec, int moves, bool reached);
+    void onStartClicked();              // uruchomienie lub wznowienie symulacji
+    void onStopClicked();               // pauza symulacji
+    void onRestartClicked();            // restart labiryntu
+    void onMapSliderChanged(int value); // zmiana rozmiaru mapy
+    void onSpeedDialChanged(int value); // zmiana prędkości animacji
+    void onAlgorithmChanged(int id);    // przełączanie algorytmu
+    void drawMaze(const Maze &maze);    // rysowanie labiryntu
+    void drawRobot(int row, int col);   // rysowanie pozycji robota
+    void onSimulationFinished(double elapsedSec, int moves, bool reached); // wyniki
 
 private:
-    Ui::MainWindow *ui;
-
-    // silnik symulacji
-    std::unique_ptr<SimulationEngine> m_engine;
-
-    // scena do rysowania
-    QGraphicsScene *m_scene = nullptr;
-
-    // spinner (GIF)
-    QMovie *m_spinnerMovie = nullptr;
-
-    // grupa przycisków algorytmu
-    QButtonGroup *m_algoGroup = nullptr;
-
-    // pamiętamy stan labiryntu, by móc przerysować przed robotem
-    Maze m_currentMaze{8, 8};
+    Ui::MainWindow            *ui;
+    std::unique_ptr<SimulationEngine> m_engine;    // silnik symulacji
+    QGraphicsScene            *m_scene        = nullptr;  // scena do rysunku
+    QMovie                    *m_spinnerMovie = nullptr;  // animowany GIF
+    QButtonGroup              *m_algoGroup    = nullptr;  // grupa radiobuttonów
+    Maze                        m_currentMaze{8, 8};      // pamiętany stan labiryntu
 };
 
 #endif // MAINWINDOW_H

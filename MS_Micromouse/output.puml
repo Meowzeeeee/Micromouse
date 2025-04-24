@@ -97,16 +97,21 @@ class SimulationEngine {
 	-m_elapsed : QElapsedTimer
 	-m_timer : QTimer
 	-m_algo : Robot::MovementAlgorithm
+	-m_paused : bool
 	-m_mapSize : int
 	-m_maxMoves : int
 	-m_moveCount : int
+	-m_speedMultiplier : int
 	+mazeChanged(const Maze& maze) : signals : void
 	-m_maze : std::unique_ptr<Maze>
 	-m_robot : std::unique_ptr<Robot>
+	-finish() : void
 	-onTimeout() : void
+	+restart(int speedMultiplier) : void
 	+robotMoved(int row, int col) : void
 	+setAlgorithm(Robot::MovementAlgorithm algo) : void
 	+setMapSize(int size) : void
+	+setSpeed(int speedMultiplier) : void
 	+simulationFinished(double elapsedSec, int moves, bool reachedCenter) : void
 	+start(int speedMultiplier) : void
 	+stop() : void
